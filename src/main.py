@@ -6,7 +6,7 @@ from src.controllers.strategies.q_nodes import QNodes
 
 def iniciar():
     """Punto de entrada principal"""
-                    # ABCDEFGHIJ #
+                    # ABCDEFGHIJ #Pruebas 10 bits
     estado_inicial = "1000000000"
     condiciones =    "1111111111"
                     #ABCDEFGHIJ_{t+1} si alguna letra no aparece es 0

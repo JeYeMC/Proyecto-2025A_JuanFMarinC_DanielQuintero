@@ -245,6 +245,7 @@ class QNodes(SIA):
                     emd_particion_candidata = emd_delta
                     dist_particion_candidata = dist_marginal_delta
 
+                    # Punto 2 Taller
                     # ✅ Terminar si pérdida es 0
                     # 🚨 OPTIMIZACIÓN: si encontramos una partición con pérdida cero, detenemos el análisis
                     if emd_delta == 0.0:
@@ -335,6 +336,8 @@ class QNodes(SIA):
             )
             Esto lo hice así para hacer almacenamiento externo de la emd individual y su distribución marginal en las particiones candidatas.
         """
+        # Punto 2 Taller
+        # 🚨 OPTIMIZACIÓN: Si la combinación omega y delta ya fue evaluada, la devolvemos directamente
         # Inicializamos variables y una estructura temporal para separar presente (0) y futuro (1)
         emd_delta = INFTY_NEG
         temporal = [[], []]
