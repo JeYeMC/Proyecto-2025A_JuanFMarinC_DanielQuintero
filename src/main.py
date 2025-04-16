@@ -24,7 +24,3 @@ def iniciar():
         mecanismo,
     )
     print(sia_uno)
-
-   
-
-
