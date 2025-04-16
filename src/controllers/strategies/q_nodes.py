@@ -244,6 +244,24 @@ class QNodes(SIA):
 
                     emd_particion_candidata = emd_delta
                     dist_particion_candidata = dist_marginal_delta
+
+                    # ✅ Terminar si pérdida es 0
+                    # 🚨 OPTIMIZACIÓN: si encontramos una partición con pérdida cero, detenemos el análisis
+                    if emd_delta == 0.0:
+                        # Creamos la clave que representa esta partición candidata
+                        mip_candidata = (
+                            tuple(
+                                deltas_ciclo[LAST_IDX]
+                                if isinstance(deltas_ciclo[LAST_IDX], list)
+                                else deltas_ciclo
+                            )
+                        )
+
+                        # Guardamos esta partición como solución óptima (porque su pérdida es 0)
+                        self.memoria_particiones[mip_candidata] = emd_delta, dist_marginal_delta
+
+                        # Terminamos el algoritmo inmediatamente (early exit)
+                        return mip_candidata
                     ...
                 # self.logger.critic(f"       [k]: {indice_mip}")
 
@@ -317,29 +335,43 @@ class QNodes(SIA):
             )
             Esto lo hice así para hacer almacenamiento externo de la emd individual y su distribución marginal en las particiones candidatas.
         """
+        # Inicializamos variables y una estructura temporal para separar presente (0) y futuro (1)
         emd_delta = INFTY_NEG
         temporal = [[], []]
 
+        # Procesamos el nodo o grupo de nodos "delta" y armamos una clave única para ellos
         if isinstance(deltas, tuple):
             d_tiempo, d_indice = deltas
             temporal[d_tiempo].append(d_indice)
-
+            clave_delta = (d_tiempo, d_indice)  # clave única si es un solo nodo
         else:
             for delta in deltas:
                 d_tiempo, d_indice = delta
                 temporal[d_tiempo].append(d_indice)
+            clave_delta = tuple(sorted(deltas))  # clave única si es grupo
 
-        copia_delta = self.sia_subsistema
+        # ⏳ MEMOIZACIÓN: Si ya calculamos esta pérdida antes, la usamos
+        if clave_delta in self.memoria_omega:
+            emd_delta, vector_delta_marginal = self.memoria_omega[clave_delta]
+        else:
+            # Si no está en memoria, realizamos el cálculo completo
+            copia_delta = self.sia_subsistema
 
-        dims_alcance_delta = temporal[EFECTO]
-        dims_mecanismo_delta = temporal[ACTUAL]
+            dims_alcance_delta = temporal[EFECTO]
+            dims_mecanismo_delta = temporal[ACTUAL]
 
-        particion_delta = copia_delta.bipartir(
-            np.array(dims_alcance_delta, dtype=np.int8),
-            np.array(dims_mecanismo_delta, dtype=np.int8),
-        )
-        vector_delta_marginal = particion_delta.distribucion_marginal()
-        emd_delta = emd_efecto(vector_delta_marginal, self.sia_dists_marginales)
+            # Bipartimos el sistema con esas dimensiones
+            particion_delta = copia_delta.bipartir(
+                np.array(dims_alcance_delta, dtype=np.int8),
+                np.array(dims_mecanismo_delta, dtype=np.int8),
+            )
+
+            # Calculamos distribución marginal y pérdida EMD
+            vector_delta_marginal = particion_delta.distribucion_marginal()
+            emd_delta = emd_efecto(vector_delta_marginal, self.sia_dists_marginales)
+
+            # Guardamos el resultado para reusarlo después
+            self.memoria_omega[clave_delta] = (emd_delta, vector_delta_marginal)
 
         # Unión #
 
